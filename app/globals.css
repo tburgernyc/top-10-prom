@@ -1,26 +1,163 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* ─── Dark Luxury Design Tokens ─────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Palette */
+  --color-onyx: #050505;
+  --color-gold: #D4AF37;
+  --color-gold-light: #E8CC6A;
+  --color-gold-dark: #A88A1A;
+  --color-platinum: #C0C0C0;
+  --color-platinum-light: #D8D8D8;
+  --color-platinum-dark: #9A9A9A;
+  --color-ivory: #F5F5F5;
+  --color-ivory-warm: #FAF8F5;
+
+  /* Semantic tokens */
+  --background: var(--color-onyx);
+  --foreground: var(--color-ivory);
+  --accent: var(--color-gold);
+  --muted: var(--color-platinum-dark);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-gold: rgba(212, 175, 55, 0.25);
+
+  /* Glassmorphism layers */
+  --glass-1: rgba(255, 255, 255, 0.03);
+  --glass-2: rgba(255, 255, 255, 0.06);
+  --glass-3: rgba(255, 255, 255, 0.09);
+  --glass-4: rgba(255, 255, 255, 0.12);
+  --glass-5: rgba(255, 255, 255, 0.16);
+
+  /* Cursor */
+  --cursor-dot-size: 8px;
+  --cursor-ring-size: 32px;
+  --cursor-lerp: 0.12s;
+
+  /* Motion */
+  --page-wipe-duration: 350ms;
+  --page-wipe-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ─── Base Layer ─────────────────────────────────────────────────────────────── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    color-scheme: dark;
+    scroll-behavior: auto; /* Lenis handles smooth scroll */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-onyx);
+    color: var(--color-ivory);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    cursor: none; /* Custom cursor replaces native */
+  }
+
+  ::selection {
+    background-color: rgba(212, 175, 55, 0.3);
+    color: var(--color-ivory);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--color-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    display: block;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── Glassmorphism Utility Classes ─────────────────────────────────────────── */
+@layer components {
+  .glass-1 {
+    background: var(--glass-1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+  }
+
+  .glass-2 {
+    background: var(--glass-2);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+  }
+
+  .glass-3 {
+    background: var(--glass-3);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  .glass-4 {
+    background: var(--glass-4);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-5 {
+    background: var(--glass-5);
+    backdrop-filter: blur(64px);
+    -webkit-backdrop-filter: blur(64px);
+    border: 1px solid var(--border-gold);
+  }
+
+  .glass-gold {
+    background: rgba(212, 175, 55, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-gold);
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.15);
+  }
+
+  /* Gold gradient text */
+  .text-gradient-gold {
+    background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Thin gold divider */
+  .divider-gold {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+    opacity: 0.4;
+  }
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ─── Gold pulse ring (for Aria button idle state) ──────────────────────────── */
+@keyframes gold-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
+}
+
+.animate-gold-pulse {
+  animation: gold-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

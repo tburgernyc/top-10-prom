@@ -1,0 +1,162 @@
+### Top 10 Prom Phase 1 Digital Showroom (Master Specification v3.3.0)
+
+**1. Executive Summary & Strategic Objectives**
+The platform is an institutional-grade Digital Showroom designed to pivot from traditional e-commerce to an intent-capture and lead-generation model. The architecture relies on a Serverless, Edge-First infrastructure using Next.js 16 and the Vercel Edge Network, entirely circumventing Docker. A "Toggleable Commerce Pattern" allows future Stripe-backed e-commerce via a `COMMERCE_ENABLED` env variable.
+
+**2. Core Technology Stack**
+* Runtime: Node.js 24.x LTS.
+* Framework: Next.js 16 (App Router, Turbopack). The `src/` directory is strictly prohibited.
+* UI & Styling: React 19, Tailwind CSS 3.4.17, Motion 12 (imports strictly from `motion/react`).
+* Database: Supabase CLI-managed PostgreSQL.
+* AI Integrations: Google Vertex AI for Virtual Try-On, and Google Gemini 2.5 Flash for the "Aria" Concierge.
+
+**3. Database Architecture & Security (Supabase)**
+* Core Tables: profiles, dresses, wishlist, availability_inquiries.
+* Shadow Cart: `fitting_room_sessions` tracking unauthenticated JSONB intent.
+* Security (RLS): Strict RLS enforced via `(select auth.uid())`.
+
+**4. Design System ("Dark Luxury") & Motion**
+* Palette: Onyx (#050505), Gold (#D4AF37), Platinum (#C0C0C0), Ivory (#F5F5F5).
+* UI: 5 glassmorphism variants, bespoke 8px dot/32px ring cursor (0.12s lerp).
+* Motion: Lenis smooth scroll engine and Motion 12 AnimatePresence for 350ms page wipes. All images AVIF/WebP.
+
+**5. AI Features & Server Actions**
+* Aria AI Concierge: `app/api/chat/route.ts` via Vercel AI SDK and Gemini 2.5 Flash. Strictly non-transactional (no "Cart"/"Buy").
+* Virtual Try-On: Proxy at `app/api/tryon/route.ts` with Vertex AI.
+* Booking: 5-step interactive form built with React 19 Server Actions, synced with Google Calendar and Resend.
+
+**6. Guardrails**
+* TaskMaster must ensure `.claude/hooks.json` intercepts all commits.
+
+**7. Execution Sequence (101 files)**
+
+Step 1 — Base Configuration (Files 1-6):
+1. package.json — Add lenis, ai (Vercel AI SDK), autoprefixer; pin tailwindcss@3.4.17; remove @tailwindcss/postcss
+2. postcss.config.mjs — Switch to Tailwind v3 plugins: tailwindcss + autoprefixer
+3. tailwind.config.ts — Dark Luxury palette (Onyx #050505, Gold #D4AF37, Platinum #C0C0C0, Ivory #F5F5F5), glassmorphism shadows, animation tokens
+4. app/globals.css — @tailwind directives, CSS custom properties for all design tokens, 5 glassmorphism layer classes (.glass-1 through .glass-5), gold gradient text utility
+5. .env.local — Placeholder vars: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GOOGLE_GENERATIVE_AI_API_KEY, GOOGLE_VERTEX_PROJECT_ID, RESEND_API_KEY, GOOGLE_CALENDAR_ID, NEXT_PUBLIC_APP_URL, COMMERCE_ENABLED=false
+6. tsconfig.json — Strict mode, path aliases (@/* → ./*, @/components, @/lib, @/types)
+
+Step 2 — Data Clients (Files 7-11):
+7. lib/supabase/client.ts — Browser Supabase client using @supabase/ssr createBrowserClient
+8. lib/supabase/server.ts — Server Supabase client using @supabase/ssr createServerClient with Next.js cookies()
+9. lib/supabase/middleware.ts — Session refresh middleware helper
+10. middleware.ts — Root middleware: Supabase session refresh on all routes except static assets
+11. lib/gemini.ts — Google Gemini 2.5 Flash client via @ai-sdk/google, model config, system prompt for Aria (strictly non-transactional)
+
+Step 3 — UI Primitives (Files 12-21):
+12. components/ui/Button.tsx — Variants: primary (gold fill), secondary (glass-2 border), ghost; sizes sm/md/lg; Motion 12 tap scale 0.97; disabled states
+13. components/ui/Input.tsx — glass-1 background, gold focus ring, floating label animation, error state
+14. components/ui/Badge.tsx — Variants: gold, platinum, onyx; pill shape; size sm/md
+15. components/ui/Modal.tsx — AnimatePresence fade+scale, glass-3 backdrop blur, gold border, focus trap, ESC close
+16. components/ui/Drawer.tsx — Bottom-sheet on mobile, right-panel on desktop; AnimatePresence slide; glass-4 surface
+17. components/ui/Tooltip.tsx — Radix Tooltip primitive wrapped with glass-1 styling and gold border
+18. components/ui/Skeleton.tsx — Shimmer animation using CSS @keyframes on onyx-50 base color
+19. components/ui/Toast.tsx — Sonner-style toasts: success (gold), error (red-500), info (platinum); auto-dismiss 4s
+20. components/ui/Carousel.tsx — Touch/mouse drag, snap scrolling, dot indicators with gold active state; uses motion/react
+21. components/ui/index.ts — Barrel export for all UI primitives
+
+Step 4 — Motion & Animation (Files 22-25):
+22. components/animations/PageTransition.tsx — AnimatePresence wrapper; 350ms fade+slide wipe between routes
+23. components/animations/FadeIn.tsx — Reusable IntersectionObserver-triggered fade-in with configurable delay/duration
+24. components/animations/StaggerChildren.tsx — Stagger container that cascades motion to child elements (0.08s gap)
+25. components/animations/LenisProvider.tsx — Client component: initializes Lenis smooth scroll, syncs with Motion 12 RAF loop, exposes useLenis() hook
+
+Step 5 — Global Layouts (Files 26-31):
+26. components/layout/Cursor.tsx — Custom cursor: 8px gold dot + 32px platinum ring, 0.12s lerp tracking, scale on hover/click, hidden on touch devices
+27. components/layout/Navbar.tsx — glass-2 sticky header, logo left, nav links center, fitting-room icon + auth button right; mobile hamburger; scroll-aware opacity
+28. components/layout/Footer.tsx — Dark onyx footer, gold divider, 3-column: brand/tagline, nav links, social icons
+29. components/layout/FittingRoomWidget.tsx — Floating bottom-right button showing item count badge; opens Drawer with session items
+30. components/layout/ThemeProvider.tsx — Wraps app with color-scheme: dark forced; no light mode
+31. app/layout.tsx — Root layout: Geist font vars, ThemeProvider, LenisProvider, Cursor, Navbar, Footer, FittingRoomWidget, PageTransition; metadata SEO config
+
+Step 6 — Catalog Components (Files 32-38):
+32. components/shop/DressCard.tsx — Vertical card with AVIF image (next/image), designer name, dress name, price (if COMMERCE_ENABLED), "Add to Fitting Room" button; glass-1 hover state
+33. components/shop/DressCardGrid.tsx — Responsive CSS grid: 1 col mobile, 2 col tablet, 3 col desktop; StaggerChildren animation on load
+34. components/shop/FilterBar.tsx — Horizontal scroll filter chips: size, color, price range, designer; glass-2 active state; zustand-backed filter state
+35. components/shop/DressDetailPanel.tsx — Full-detail view: image carousel, description, available stores list, "Check Availability" CTA, "Add to Wishlist" (auth-gated); VTO button
+36. components/shop/AvailabilityForm.tsx — Modal form: select store, preferred date, contact info; React 19 useActionState; Resend confirmation email on submit
+37. components/shop/FittingRoomSession.tsx — Session items list in Drawer: dress thumbnail, name, remove button; "Book Consultation" CTA
+38. lib/stores/shopStore.ts — Zustand store: filters state, fitting room items (synced to supabase fitting_room_sessions), wishlist optimistic state
+
+Step 7 — Aria AI Concierge (Files 39-42):
+39. components/chat/AriaChatButton.tsx — Floating bottom-left button; gold pulsing ring idle animation; opens chat panel
+40. components/chat/AriaChatPanel.tsx — Slide-up panel (glass-5); message list with user/assistant bubbles; input bar; AnimatePresence message entry
+41. components/chat/AriaMessageBubble.tsx — Markdown renderer for Aria responses; gold accent for assistant, glass-1 for user; streaming text animation
+42. app/api/chat/route.ts — Edge runtime POST handler; Vercel AI SDK streamText with Gemini 2.5 Flash; system prompt enforces non-transactional persona; rate limiting via Supabase RLS
+
+Step 8 — Boutique & Auth Pages (Files 43-48):
+43. app/(auth)/login/page.tsx — Split layout: dress imagery left, glass-4 login form right; Supabase magic link + email/password; redirect to /dashboard
+44. app/(auth)/signup/page.tsx — Same split layout; collect first_name, last_name, phone, style_preferences; creates profile row via Server Action
+45. app/(auth)/logout/route.ts — GET route handler: clears Supabase session, redirects to /
+46. components/auth/AuthGuard.tsx — Server component HOC: redirects unauthenticated users to /login
+47. components/auth/ProfileForm.tsx — Edit profile: name, phone, style_preferences (multi-select tags); React 19 useActionState; optimistic UI
+48. app/actions/auth.ts — Server Actions: signUp, signIn, signOut, updateProfile — all using Supabase server client
+
+Step 9 — Dashboards (Files 49-54):
+49. app/dashboard/page.tsx — Protected: personalized greeting, wishlist preview (3 items), recent fitting room session, quick links
+50. app/dashboard/wishlist/page.tsx — Full wishlist grid using DressCardGrid; remove from wishlist Server Action; share wishlist link
+51. app/dashboard/profile/page.tsx — Profile edit using ProfileForm; account settings section
+52. app/dashboard/layout.tsx — Dashboard shell: sidebar nav on desktop, bottom tabs on mobile; AuthGuard wrapper
+53. app/dashboard/appointments/page.tsx — Upcoming/past appointments list; cancel appointment Server Action; sync with Google Calendar
+54. app/actions/wishlist.ts — Server Actions: addToWishlist, removeFromWishlist, getWishlist — Supabase server client with auth check
+
+Step 10 — Landing Canvas (Files 55-60):
+55. app/page.tsx — Landing page orchestrator: imports and sequences all landing sections
+56. components/landing/HeroSection.tsx — Full-viewport hero: AVIF background, headline with text-gradient-gold, CTA buttons; Lenis-driven parallax on scroll
+57. components/landing/FeaturedDresses.tsx — "Top 10 This Season" curated grid: DressCardGrid with 3 highlighted dresses; StaggerChildren
+58. components/landing/BoutiqueMap.tsx — Interactive store locator: stylized SVG map or embedded mapbox-gl; store list sidebar; glass-2 card per location
+59. components/landing/StyleQuiz.tsx — 3-step preference quiz (silhouette, color, occasion); results update zustand style_preferences; smooth step transitions
+60. components/landing/TrustSection.tsx — Social proof: press logos, testimonial carousel, "As Seen In" strip; gold dividers
+
+Step 11 — Booking Engine (Files 61-66):
+61. components/booking/BookingWizard.tsx — 5-step wizard shell: step indicator (gold active), AnimatePresence step transitions, form state via React 19 useFormState
+62. components/booking/steps/Step1SelectDress.tsx — Browse/confirm which dress(es) to try; pulls from fitting room session
+63. components/booking/steps/Step2SelectStore.tsx — Store selector: map + list; filter by dress availability
+64. components/booking/steps/Step3SelectDateTime.tsx — Calendar date picker + time slot grid; fetches availability from Google Calendar API
+65. components/booking/steps/Step4ContactInfo.tsx — Name, email, phone; pre-fills from auth profile if logged in
+66. components/booking/steps/Step5Confirm.tsx — Summary view; submit creates availability_inquiry row + sends Resend confirmation + creates Google Calendar event; success animation
+
+Step 12 — VTO Visualizer (Files 67-70):
+67. components/vto/VTOButton.tsx — "Try On" button on DressDetailPanel; requires image upload; triggers VTO flow
+68. components/vto/VTOUploadModal.tsx — Modal: webcam capture or file upload for user photo; preview + confirm
+69. components/vto/VTOResultViewer.tsx — Displays composited try-on image from Vertex AI; download button; "Add to Fitting Room" CTA
+70. app/api/tryon/route.ts — Edge POST: receives user photo + dress image URLs; proxies to Google Vertex AI Imagen try-on endpoint; returns composited image URL
+
+Step 13 — Edge Backend (Files 71-78):
+71. app/api/availability/route.ts — POST: creates availability_inquiry row; validates with Zod; sends Resend email to store; returns inquiry ID
+72. app/api/calendar/route.ts — GET: returns available time slots from Google Calendar; POST: creates calendar event for confirmed booking
+73. app/api/fitting-room/route.ts — GET/POST/DELETE: manage fitting_room_session items; creates session token for anonymous users via cookies
+74. app/api/dresses/route.ts — GET: list dresses with filters (store, size, color, price); Supabase server client; edge runtime
+75. app/api/dresses/[id]/route.ts — GET: single dress detail with full attributes; Supabase server client
+76. lib/validations/availability.ts — Zod schema for availability inquiry form
+77. lib/validations/booking.ts — Zod schema for booking wizard all 5 steps
+78. lib/validations/auth.ts — Zod schemas for signup and profile update forms
+
+Step 14 — App Router Pages (Files 79-90):
+79. app/dresses/page.tsx — Catalog page: FilterBar + DressCardGrid; server-side initial load; client-side filter updates via SWR/route params
+80. app/dresses/[id]/page.tsx — Dress detail page: DressDetailPanel; generateStaticParams for top 20 dresses; OG image meta
+81. app/boutiques/page.tsx — All boutique locations; BoutiqueMap full-page; store detail sidebar
+82. app/boutiques/[slug]/page.tsx — Individual store page: store info, available dresses, Google Maps embed, contact CTA
+83. app/book/page.tsx — Booking entry: BookingWizard rendered in glass-5 card; requires fitting room session
+84. app/book/confirmation/page.tsx — Post-booking: animated success, booking reference number, add-to-calendar links
+85. app/aria/page.tsx — Dedicated Aria chat page (for SEO/shareability); AriaChatPanel full-screen layout
+86. app/style-quiz/page.tsx — Standalone style quiz page; StyleQuiz component full-screen
+87. app/(auth)/layout.tsx — Auth layout: centered, dark background, no navbar/footer
+88. app/not-found.tsx — Elegant 404: animated gold "404", message, link back to catalog
+89. app/error.tsx — Error boundary: glass-3 card with error message, retry button
+90. app/loading.tsx — Global loading UI: animated gold ring spinner on onyx background
+
+Step 15 — Deployment & Config (Files 91-101):
+91. next.config.ts — Image domains (supabase storage, CDN), AVIF/WebP optimization, experimental Turbopack, headers for security (CSP, HSTS)
+92. vercel.json — Edge function regions (iad1), cron jobs (none phase 1), environment variable references
+93. .env.example — Documented template of all required environment variables (safe to commit)
+94. supabase/seed.sql — Sample data: 10 dress records with realistic attributes, 3 boutique store records
+95. supabase/migrations/0002_boutiques.sql — boutiques table: id, name, address, city, state, phone, email, coordinates, slug; RLS: public read
+96. supabase/migrations/0003_rls_fix.sql — Update all RLS policies to use (select auth.uid()) pattern for performance
+97. lib/types/database.ts — Generated TypeScript types matching Supabase schema (profiles, dresses, boutiques, wishlist, fitting_room_sessions, availability_inquiries)
+98. lib/types/index.ts — Application-level types: DressFilter, FittingRoomItem, BookingFormData, StylePreference
+99. public/fonts/manifest.json — Font preload manifest for Geist Sans variable font
+100. .claude/hooks.json — Pre-commit hook: runs ESLint + TypeScript check; blocks commit on error
+101. scripts/generate-types.sh — Shell script: runs supabase gen types typescript and writes to lib/types/database.ts
