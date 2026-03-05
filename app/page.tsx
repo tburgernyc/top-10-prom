@@ -33,7 +33,7 @@ export default function HomePage() {
 
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
             <Link
-              href="/catalog"
+              href="/dresses"
               className="px-8 py-3.5 rounded-full bg-gold text-onyx text-sm font-bold
                          tracking-widest uppercase hover:bg-gold-light transition-colors duration-200
                          shadow-gold-glow"
