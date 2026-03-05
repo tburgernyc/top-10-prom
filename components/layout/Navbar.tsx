@@ -6,9 +6,10 @@ import { motion, useMotionValue, useTransform, animate } from "motion/react";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { label: "Catalog", href: "/catalog" },
-  { label: "Collections", href: "/collections" },
-  { label: "Boutiques", href: "/boutiques" },
+  { label: "Catalog", href: "/dresses" },
+  { label: "Prom", href: "/prom" },
+  { label: "Bridal", href: "/bridal" },
+  { label: "Tuxedos", href: "/tux" },
   { label: "About", href: "/about" },
 ] as const;
 
