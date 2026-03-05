@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // ── Turbopack (stable in Next 16) ──────────────────────────────────────────
+  // ── Transpile motion/react (ensures "use client" markers are respected in all Next.js versions)
+  transpilePackages: ["motion"],
+
+  // ── Turbopack (stable in Next 16+, ignored in earlier versions) ────────────
+  // @ts-expect-error -- valid in Next 16+
   turbopack: {},
 
   // ── Image optimisation ─────────────────────────────────────────────────────
